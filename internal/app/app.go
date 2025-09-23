@@ -10,17 +10,20 @@ import (
 	"github.com/nullsec45/golang-news-api/lib/auth"
 	"github.com/nullsec45/golang-news-api/config"
 	"github.com/nullsec45/golang-news-api/lib/pagination"
+	"github.com/nullsec45/golang-news-api/internal/adapter/repository"
+	"github.com/nullsec45/golang-news-api/internal/core/service"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/nullsec45/golang-news-api/internal/adapter/handler"
 )
 
 
 func RunServer(){
 	cfg := config.NewConfig()
-	_, err := cfg.ConnectionPostgres()
+	db, err := cfg.ConnectionPostgres()
 
 	if err != nil {
 		log.Fatal("Error connection to database: %v", err)
@@ -31,8 +34,17 @@ func RunServer(){
 	cdfR2 := cfg.LoadAWSConfig()
 	_ = s3.NewFromConfig(cdfR2)
 
-	_ = auth.NewJwt(cfg)
+	jwt := auth.NewJwt(cfg)
 	_ = pagination.NewPagination()
+
+	// Repository
+	authRepo := repository.NewAuthRepository(db.DB)
+
+	// Service
+	authService := service.NewAuthService(authRepo, cfg, jwt)
+
+	// Handler
+	authHandler := handler.NewAuthHandler(authService)
 
 	app := fiber.New()
 	app.Use(cors.New())
@@ -42,7 +54,8 @@ func RunServer(){
 		Format: "[${time}] %{ip} %{status} - %{latency} %{method} %{path}\n",
 	}))
 
-	_ = app.Group("/api")
+	api := app.Group("/api")
+	api.Post("/login", authHandler.Login)
 
 	go func(){
 		if cfg.App.AppPort == "" {
