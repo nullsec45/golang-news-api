@@ -17,6 +17,6 @@ func CheckPasswordHash(password, hash string) bool {
 
 func GenerateSlug(title string) string {
 	slug := strings.ToLower(title)
-	slug = strings.ReplaceAll(slug, "","-")
+	slug = strings.ReplaceAll(slug, " ","-")
 	return slug
 }
