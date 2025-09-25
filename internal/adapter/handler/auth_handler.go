@@ -5,7 +5,7 @@ import (
 	"github.com/nullsec45/golang-news-api/internal/core/service"
 	"github.com/nullsec45/golang-news-api/internal/core/domain/entity"
 	"github.com/nullsec45/golang-news-api/internal/adapter/handler/request"
-	validatorLib "github.com/nullsec45/golang-news-api/validator"
+	validatorLib "github.com/nullsec45/golang-news-api/lib/validator"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/log"
