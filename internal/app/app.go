@@ -10,6 +10,7 @@ import (
 	"github.com/nullsec45/golang-news-api/lib/auth"
 	"github.com/nullsec45/golang-news-api/config"
 	"github.com/nullsec45/golang-news-api/lib/pagination"
+	"github.com/nullsec45/golang-news-api/lib/middleware"
 	"github.com/nullsec45/golang-news-api/internal/adapter/repository"
 	"github.com/nullsec45/golang-news-api/internal/core/service"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -35,16 +36,22 @@ func RunServer(){
 	_ = s3.NewFromConfig(cdfR2)
 
 	jwt := auth.NewJwt(cfg)
+	middlewareAuth := middleware.NewMiddleware(cfg)
+
+	// Pagination
 	_ = pagination.NewPagination()
 
 	// Repository
 	authRepo := repository.NewAuthRepository(db.DB)
+	categoryRepo := repository.NewCategoryRepository(db.DB)
 
 	// Service
 	authService := service.NewAuthService(authRepo, cfg, jwt)
+	categoryService := service.NewCategoryService(categoryRepo)
 
 	// Handler
 	authHandler := handler.NewAuthHandler(authService)
+	categoryHandler := handler.NewCategoryHandler(categoryService)
 
 	app := fiber.New()
 	app.Use(cors.New())
@@ -56,6 +63,14 @@ func RunServer(){
 
 	api := app.Group("/api")
 	api.Post("/login", authHandler.Login)
+
+	adminApp := api.Group("/admin")
+	adminApp.Use(middlewareAuth.CheckToken())
+
+	// Category
+	categoryApp := adminApp.Group("/categories")
+	categoryApp.Get("/", categoryHandler.GetCategories)
+	categoryApp.Post("/", categoryHandler.CreateCategory)
 
 	go func(){
 		if cfg.App.AppPort == "" {
