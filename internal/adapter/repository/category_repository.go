@@ -59,7 +59,24 @@ func (c *categoryRepository) GetCategories(ctx context.Context)([]entity.Categor
 }
 
 func (c *categoryRepository) GetCategoryByID(ctx context.Context, id int64)(*entity.CategoryEntity, error) {
-	panic("kiw")
+	var modelCategory model.Category
+	err = c.db.Where("id=?", id).Preload("User").First(&modelCategory).Error
+	if err != nil {
+		code = "[REPOSITORY] GetCategoryByID - 1"
+		log.Errorw(code, err)
+		return nil, err
+	}
+
+	return &entity.CategoryEntity{
+		ID:modelCategory.ID,
+		Title:modelCategory.Title,
+		Slug:modelCategory.Slug,
+		User:entity.UserEntity{
+			ID:modelCategory.User.ID,
+			Name:modelCategory.User.Name,
+			Email:modelCategory.User.Email,
+		},
+	}, nil
 }
 
 func (c *categoryRepository) CreateCategory(ctx context.Context, req entity.CategoryEntity) error {
@@ -89,11 +106,58 @@ func (c *categoryRepository) CreateCategory(ctx context.Context, req entity.Cate
 }
 
 func (c *categoryRepository) EditCategoryByID(ctx context.Context, req entity.CategoryEntity) error {
-	panic("kiw")
+	var countSlug int64
+	// var modelCategory model.Category
+	err = c.db.Table("categories").Where("slug = ?", req.Slug).Count(&countSlug).Error
+	if err != nil {
+		code = "[REPOSITORY] EditCategoryByID - 1"
+		log.Errorw(code, err)
+		return err
+	}
+
+	countSlug = countSlug + 1
+	slug := req.Slug 
+	if countSlug == 0 {
+		slug 	= fmt.Sprintf("%s-%d", req.Slug, countSlug)
+	}
+ 
+	modelCategory := model.Category{
+		Title:req.Title,
+		Slug:slug,
+		CreatedByID:req.User.ID,
+	}
+
+	err := c.db.Where("id = ?", req.ID).Updates(&modelCategory).Error
+	if err != nil {
+		code = "[REPOSITORY] EditCategoryByID - 2"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
 }
 
 func (c *categoryRepository) DeleteCategory(ctx context.Context, id int64) error {
-	panic("kiw")
+	var count int64
+	err = c.db.Table("contents").Where("category_id = ?", id).Count(&count).Error
+	if err != nil {
+		code = "[REPOSITORY] DeleteCategory - 1"
+		log.Errorw(code, err)
+		return err
+	}
+
+	if count > 0 {
+		return errors.New("category is used in contents, cannot be deleted")
+	}
+	
+	err = c.db.Where("id = ?", id).Delete(&model.Category{}).Error
+	if err != nil {
+		code = "[REPOSITORY] DeleteCategory - 2"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
 }
 
 

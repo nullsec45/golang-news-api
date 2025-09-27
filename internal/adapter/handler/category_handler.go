@@ -6,7 +6,7 @@ import (
 	"github.com/nullsec45/golang-news-api/internal/adapter/handler/request"
 	"github.com/nullsec45/golang-news-api/internal/adapter/handler/response"
 	"github.com/nullsec45/golang-news-api/internal/core/domain/entity"
-	// "github.com/nullsec45/golang-news-api/lib/conv"
+	"github.com/nullsec45/golang-news-api/lib/conv"
 	validatorLib "github.com/nullsec45/golang-news-api/lib/validator"
 
 	"github.com/gofiber/fiber/v2/log"
@@ -70,7 +70,51 @@ func (ch *categoryHandler) GetCategories(c *fiber.Ctx) error {
 }
 
 func (ch *categoryHandler) GetCategoryByID(c *fiber.Ctx) error {
-	panic("kiw")
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] GetCategories - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	idParam := c.Params("id")
+	id, err := conv.StringToInt64(idParam)
+	if err != nil {
+		code = "[HANDLER] GetCategoryByID - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message= err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	result, err := ch.categoryService.GetCategoryByID(c.Context(), id)
+	if err != nil {
+		code = "[HANDLER] GetCategoryByID - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	categoryResponse := response.SuccessCategoryResponse{
+		ID:result.ID,
+		Title:result.Title,
+		Slug:result.Slug,
+		CreatedByName:result.User.Name,
+	}
+	
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Data=categoryResponse
+	defaultSuccessResponse.Pagination=nil
+	defaultSuccessResponse.Meta.Message="Category fetched Successfully"
+
+	return c.JSON(defaultSuccessResponse)
 }
 
 func (ch *categoryHandler) CreateCategory(c *fiber.Ctx) error {
@@ -125,15 +169,116 @@ func (ch *categoryHandler) CreateCategory(c *fiber.Ctx) error {
 	defaultSuccessResponse.Meta.Status=true
 	defaultSuccessResponse.Pagination=nil
 	defaultSuccessResponse.Meta.Message="Category created successfully"
-	return c.JSON(defaultSuccessResponse)
+	return c.Status(fiber.StatusCreated).JSON(defaultSuccessResponse)
 }
 
 func (ch *categoryHandler) EditCategoryByID(c *fiber.Ctx) error {
-	panic("kiw")
+	var req request.CategoryRequest
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] EditCategory - 1"
+		log.Errorw(code,err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	if err = c.BodyParser(&req); err != nil {
+		code="[HANDLER] EditCategory - 2"
+		log.Errorw(code,err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="invalid request body"
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	if err=validatorLib.ValidateStruct(req); err != nil {
+		code="[HANDLER] EditCategory - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	idParam := c.Params("id")
+	id, err := conv.StringToInt64(idParam)
+	if err != nil {
+		code = "[HANDLER] EditCategory - 4"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message= err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	reqEntity := entity.CategoryEntity{
+		ID:id,
+		Title:req.Title,	
+		User:entity.UserEntity{
+			ID:int64(userID),
+		},
+	}
+	
+	err = ch.categoryService.EditCategoryByID(c.Context(), reqEntity)
+	if err != nil {
+		code = "[HANDLER] EditCategoryByID - 5"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	defaultSuccessResponse.Data=nil
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Pagination=nil
+	defaultSuccessResponse.Meta.Message="Category updated successfully"
+	return c.JSON(defaultSuccessResponse)
 }
 
 func (ch *categoryHandler) DeleteCategory(c *fiber.Ctx) error {
-	panic("kiw")
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] DeleteCategory - 1"
+		log.Errorw(code,err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	idParam := c.Params("id")
+	id, err := conv.StringToInt64(idParam)
+	if err != nil {
+		code = "[HANDLER] DeleteCategory - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message= err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	err = ch.categoryService.DeleteCategory(c.Context(), id)
+
+	if err != nil {
+		code = "[HANDLER] DeleteCategory - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	defaultSuccessResponse.Data=nil
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Pagination=nil
+	defaultSuccessResponse.Meta.Message="Category deleted successfully"
+
+	return c.JSON(defaultSuccessResponse)
 }
 
 func NewCategoryHandler(categoryService service.CategoryService) CategoryHandler {

@@ -32,7 +32,14 @@ func (c *categoryService) GetCategories (ctx context.Context)([]entity.CategoryE
 }
 
 func (c *categoryService) GetCategoryByID(ctx context.Context, id int64)(*entity.CategoryEntity, error) {
-	panic("kiw")
+	result, err := c.categoryRepository.GetCategoryByID(ctx, id)
+	if err != nil {
+		code = "[SERVICE] GetCategoryByID - 1"
+		log.Errorw(code, err)
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (c *categoryService) CreateCategory(ctx context.Context, req entity.CategoryEntity) error {
@@ -50,11 +57,39 @@ func (c *categoryService) CreateCategory(ctx context.Context, req entity.Categor
 }
 
 func (c *categoryService) EditCategoryByID(ctx context.Context, req entity.CategoryEntity) error {
-	panic("kiw")
+	categoryData, err := c.categoryRepository.GetCategoryByID(ctx, req.ID)
+	if err != nil {
+		code = "[SERVICE] EditCategoryByID - 1"
+		log.Errorw(code, err)
+		return err
+	}
+
+	slug := conv.GenerateSlug(req.Title)
+	if categoryData.Title == req.Title {
+		slug = categoryData.Slug
+	}
+
+	req.Slug = slug
+
+	err = c.categoryRepository.EditCategoryByID(ctx, req)
+	if err != nil {
+		code = "[SERVICE] EditCategoryByID - 2"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
 }
 
 func (c *categoryService) DeleteCategory(ctx context.Context, id int64) error {
-	panic("kiw")
+	err = c.categoryRepository.DeleteCategory(ctx, id)
+	if err != nil {
+		code = "[SERVICE] DeleteCategory - 1"
+		log.Errorw(code, err)
+		return err
+	}
+	
+	return nil
 }
 
 func NewCategoryService(categoryRepo repository.CategoryRepository)CategoryService{
