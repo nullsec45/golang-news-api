@@ -36,11 +36,26 @@ func (c *contentService) GetContents(ctx context.Context) ([]entity.ContentEntit
 }
 
 func (c *contentService) CreateContent(ctx context.Context, req entity.ContentEntity) error {	
-	panic("implement me")
+	err = c.contentRepo.CreateContent(ctx, req)
+	
+	if err != nil {
+		code = "[SERVICE] CreateContent - 1"
+		log.Errorw(code, err)
+		return  err
+	}	
+
+	return  nil
 }
 
 func (c *contentService) GetContentByID(ctx context.Context, id int64) (*entity.ContentEntity, error) {
-	panic("implement me")
+	result, err := c.contentRepo.GetContentByID(ctx, id)
+	if err != nil {
+		code = "[SERVICE] GetContentByID - 1"
+		log.Errorw(code, err)
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (c *contentService) UpdateContent(ctx context.Context, req *entity.ContentEntity) error {
@@ -48,7 +63,14 @@ func (c *contentService) UpdateContent(ctx context.Context, req *entity.ContentE
 }		
 
 func (c *contentService) DeleteContent(ctx context.Context, id int64) error {
-	panic("implement me")
+	err = c.contentRepo.DeleteContent(ctx, id)
+	if err != nil {
+		code = "[SERVICE] DeleteContent - 1"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
 }
 
 func (c *contentService) UploadImageR2(ctx context.Context, req entity.FileUploadEntity) (string, error) {

@@ -1,15 +1,15 @@
 package handler
 
 import (
-	// "github.com/nullsec45/golang-news-api/internal/adapter/handler/request"
+	"github.com/nullsec45/golang-news-api/internal/adapter/handler/request"
 	"github.com/nullsec45/golang-news-api/internal/adapter/handler/response"
 	"github.com/nullsec45/golang-news-api/internal/core/domain/entity"
 	"github.com/nullsec45/golang-news-api/internal/core/service"
-	// "github.com/nullsec45/golang-news-api/lib/conv"
-	// validatorLib "github.com/nullsec45/golang-news-api/lib/validator"
+	"github.com/nullsec45/golang-news-api/lib/conv"
+	validatorLib "github.com/nullsec45/golang-news-api/lib/validator"
 	// "fmt"
 	// "os"
-	// "strings"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -84,11 +84,121 @@ func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
 }
 
 func (coh *contentHandler) GetContentByID(c *fiber.Ctx) error {
-	panic("implement me")
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] GetContentByID - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	idParam := c.Params("id")
+	contentID, err := conv.StringToInt64(idParam)
+	if err != nil {
+		code = "[HANDLER] GetContentByID - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+	
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	result, err := coh.contentService.GetContentByID(c.Context(), contentID)
+
+	if err != nil {
+		code = "[HANDLER] GetContentByID - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+	
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Meta.Message="Contents fetched Successfully"
+
+	respContent := response.ContentResponse {
+		ID : result.ID,
+		Title: result.Title,
+		Excerpt: result.Excerpt,
+		Description: result.Description,
+		Image:result.Image,
+		Tags: result.Tags,
+		Status: result.Status,
+		CategoryID: result.CategoryID,
+		CreatedByID: result.CreatedByID,
+		CreatedAt: result.CreatedAt.Local().String(),
+		CategoryName:result.Category.Title,
+		Author: result.User.Name,
+	}
+
+
+	defaultSuccessResponse.Data=respContent
+	defaultSuccessResponse.Pagination=nil
+	return c.JSON(defaultSuccessResponse)
 }
 
 func (coh *contentHandler) CreateContent(c *fiber.Ctx) error {
-	panic("implement me")
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] CreateContent - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	var req request.ContentRequest
+	if err = c.BodyParser(&req); err != nil {
+		code := "[HANDLER] CreateContent - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Invalid request body"
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	if err = validatorLib.ValidateStruct(&req); err != nil {
+		code := "[HANDLER] CreateContent - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	tags := strings.Split(req.Tags, ",")
+	reqEntity := entity.ContentEntity{
+		Title:req.Title,
+		Excerpt:req.Excerpt,
+		Description:req.Description,
+		Image:req.Image,
+		Tags:tags,
+		Status:req.Status,
+		CategoryID:req.CategoryID,
+		CreatedByID:int64(userID),
+	}
+
+	err = coh.contentService.CreateContent(c.Context(), reqEntity)
+	if err != nil {
+		code := "[HANDLER] CreateContent - 4"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+		
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Meta.Message="Content created Successfully"
+	defaultSuccessResponse.Data=nil
+
+	return c.Status(fiber.StatusCreated).JSON(defaultSuccessResponse)
 }
 
 func (coh *contentHandler) UpdateContent(c *fiber.Ctx) error {
@@ -96,7 +206,44 @@ func (coh *contentHandler) UpdateContent(c *fiber.Ctx) error {
 }
 
 func (coh *contentHandler) DeleteContent(c *fiber.Ctx) error {
-	panic("implement me")
+	claims := c.Locals("user").(*entity.JwtData)
+	userID := claims.UserID
+	if userID == 0 {
+		code = "[HANDLER] DeleteContent - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message="Unauthorized access"
+
+		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
+	}
+
+	idParam := c.Params("id")
+	contentID, err := conv.StringToInt64(idParam)
+	if err != nil {
+		code = "[HANDLER] DeleteContent - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+	
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	err = coh.contentService.DeleteContent(c.Context(), contentID)
+	if err != nil {
+		code = "[HANDLER] DeleteContent - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+	
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Meta.Message="Content deleted Successfully"
+	defaultSuccessResponse.Data=nil
+
+	return c.JSON(defaultSuccessResponse)
+
 }
 
 func (coh *contentHandler) UploadImageR2(c *fiber.Ctx) error {
