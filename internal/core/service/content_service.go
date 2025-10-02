@@ -59,7 +59,14 @@ func (c *contentService) GetContentByID(ctx context.Context, id int64) (*entity.
 }
 
 func (c *contentService) UpdateContent(ctx context.Context, req *entity.ContentEntity) error {
-	panic("implement me")
+	err = c.contentRepo.UpdateContent(ctx, req)
+	if err != nil {
+		code = "[SERVICE] UpdateContent - 1"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
 }		
 
 func (c *contentService) DeleteContent(ctx context.Context, id int64) error {

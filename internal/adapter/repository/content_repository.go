@@ -4,6 +4,7 @@ import (
 	"github.com/nullsec45/golang-news-api/internal/core/domain/entity"
 	"context"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"github.com/nullsec45/golang-news-api/internal/core/domain/model"
 	"github.com/gofiber/fiber/v2/log"
 	"strings"
@@ -24,7 +25,7 @@ type contentRepository struct {
 func (c *contentRepository) GetContents(ctx context.Context) ([]entity.ContentEntity, error) {
 	var modelContents []model.Content
 
-	err := c.db.Order("created_at desc").Preload("User","Category").Find(&modelContents).Error
+	err := c.db.Order("created_at desc").Preload(clause.Associations).Find(&modelContents).Error
 	if err != nil {
 		code = "[REPOSITORY] GetContents - 1"
 		log.Errorw(code, err)
@@ -88,7 +89,7 @@ func (c *contentRepository) CreateContent(ctx context.Context, req entity.Conten
 func (c *contentRepository) GetContentByID(ctx context.Context, id int64) (*entity.ContentEntity, error) {
 	var modelContent model.Content
 
-	err = c.db.Where("id = ?", id).Preload("User","Category").First(&modelContent).Error
+	err = c.db.Where("id = ?", id).Preload(clause.Associations).First(&modelContent).Error
 
 	if err != nil {
 		code = "[REPOSITORY] GetContentByID - 1"
@@ -123,7 +124,27 @@ func (c *contentRepository) GetContentByID(ctx context.Context, id int64) (*enti
 }
 
 func (c *contentRepository) UpdateContent(ctx context.Context, req *entity.ContentEntity) error {
-	panic("implement me")
+		tags := strings.Join(req.Tags, ",")
+		modelContent := model.Content{
+			Title:req.Title,
+			Excerpt:req.Excerpt,
+			Description:req.Description,
+			Image:req.Image,
+			Tags:tags,
+			Status:req.Status,
+			CategoryID:req.CategoryID,
+			CreatedByID:req.CreatedByID,
+		}
+
+		err = c.db.Where("id = ?", req.ID).Updates(modelContent).Error
+
+		if err != nil {
+			code = "[REPOSITORY] UpdateContent - 1"
+			log.Errorw(code, err)
+			return err
+		}
+		
+		return nil
 }		
 
 func (c *contentRepository) DeleteContent(ctx context.Context, id int64) error {
