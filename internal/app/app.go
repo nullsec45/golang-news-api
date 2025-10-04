@@ -20,6 +20,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/nullsec45/golang-news-api/internal/adapter/handler"
+	"github.com/gofiber/contrib/swagger"
 )
 
 
@@ -73,6 +74,17 @@ func RunServer(){
 	app.Use(logger.New(logger.Config{
 		Format: "[${time}] %{ip} %{status} - %{latency} %{method} %{path}\n",
 	}))
+
+	if os.Getenv("APP_ENV") != "production" {
+		cfg := swagger.Config{
+			BasePath:"/api",
+			FilePath:"./docs/swagger.json",
+			Path:"docs",
+			Title:"Swagger API Docs",
+		}
+
+		app.Use(swagger.New(cfg))
+	}
 
 	api := app.Group("/api")
 	api.Post("/login", authHandler.Login)
