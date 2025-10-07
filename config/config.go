@@ -1,6 +1,10 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+	"strings"
+	"github.com/joho/godotenv"
+)
 
 type App struct {
 	AppPort string `json:"app_port"`
@@ -33,6 +37,14 @@ type Config struct {
 	App App
 	Psql PsqlDB
 	R2 CloudflareR2
+}
+
+func Init() {
+	_ = godotenv.Load()
+
+	viper.AutomaticEnv()
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 }
 
 func NewConfig() *Config{
