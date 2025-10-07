@@ -25,6 +25,8 @@ install:
 migrate-up: 
 	migrate -database "postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -path database/migrations up
 
-
 migrate-down: 
 	migrate -database "postgres://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -path database/migrations down
+
+seeder:
+	go run ./cmd/seeder
