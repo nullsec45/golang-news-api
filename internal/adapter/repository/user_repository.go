@@ -12,6 +12,7 @@ import (
 type UserRepository interface {
 	UpdatePassword(ctx context.Context, newPass string, id int64) error
 	GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error)
+	GetUserByIDWithPassword(ctx context.Context, id int64) (*entity.UserEntityWithPassword, error)
 }
 
 type userRepository struct {
@@ -32,6 +33,23 @@ func (u *userRepository) GetUserByID(ctx context.Context, id int64) (*entity.Use
 		ID:    id,
 		Name:  modelUser.Name,
 		Email: modelUser.Email,
+	}, nil
+}
+
+func (u *userRepository) GetUserByIDWithPassword(ctx context.Context, id int64) (*entity.UserEntityWithPassword, error) {
+	var modelUser model.User
+	err = u.db.Where("id = ?", id).First(&modelUser).Error
+	if err != nil {
+		code := "[REPOSITORY] GetUserByID - 1"
+		log.Errorw(code, err)
+		return nil, err
+	}
+
+	return &entity.UserEntityWithPassword{
+		ID:    id,
+		Name:  modelUser.Name,
+		Email: modelUser.Email,
+		Password: modelUser.Password,
 	}, nil
 }
 

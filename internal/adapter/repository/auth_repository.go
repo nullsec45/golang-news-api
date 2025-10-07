@@ -12,14 +12,14 @@ var err error
 var code string
 
 type AuthRepository interface {
-	GetUserByEmail(ctx context.Context, req entity.LoginRequest)(*entity.UserEntity, error)
+	GetUserByEmail(ctx context.Context, req entity.LoginRequest)(*entity.UserEntityWithPassword, error)
 }
 
 type authRepository struct {
 	db *gorm.DB
 }
 
-func (a *authRepository) GetUserByEmail(ctx context.Context, req entity.LoginRequest) (*entity.UserEntity, error) {
+func (a *authRepository) GetUserByEmail(ctx context.Context, req entity.LoginRequest) (*entity.UserEntityWithPassword, error) {
 	var modelUser model.User
 
 	err = a.db.Where("email=?", req.Email).First(&modelUser).Error
@@ -29,7 +29,7 @@ func (a *authRepository) GetUserByEmail(ctx context.Context, req entity.LoginReq
 		return nil, err
 	}
 
-	resp := entity.UserEntity{
+	resp := entity.UserEntityWithPassword{
 		ID:modelUser.ID,
 		Name:modelUser.Name,
 		Email:modelUser.Email,

@@ -7,10 +7,12 @@ import (
 	"context"
 
 	"github.com/gofiber/fiber/v2/log"
+	"errors"
+	// "fmt"
 )
 
 type UserService interface {
-	UpdatePassword(ctx context.Context, newPass string, id int64) error
+	UpdatePassword(ctx context.Context, req entity.UpdatePasswordEntity, id int64) error
 	GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error)
 }
 
@@ -30,17 +32,38 @@ func (u *userService) GetUserByID(ctx context.Context, id int64) (*entity.UserEn
 }
 
 // UpdatePassword implements UserService.
-func (u *userService) UpdatePassword(ctx context.Context, newPass string, id int64) error {
-	password, err := conv.HashPassword(newPass)
+func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePasswordEntity, id int64) error {
+	result, err := u.userRepo.GetUserByIDWithPassword(ctx, id)
 	if err != nil {
 		code := "[SERVICE] UpdatePassword - 1"
 		log.Errorw(code, err)
 		return err
 	}
 
+	if checkPass := conv.CheckPasswordHash(req.CurrentPassword, result.Password); !checkPass {
+		code = "[SERVICE] UpdatePassword - 2"
+		err = errors.New("Failed update password, current password invalid.")
+		log.Errorw(code, "Invalid Password")
+		return err
+	}
+
+	// if req.NewPassword != req.ConfirmPassword {
+	// 	code = "[SERVICE] UpdatePassword - 3"
+	// 	err = errors.New("Failed update password, new password and confirm password don't match!.")
+	// 	log.Errorw(code, "Invalid Password")
+	// 	return  err
+	// }
+
+	password, err := conv.HashPassword(req.ConfirmPassword)
+	if err != nil {
+		code := "[SERVICE] UpdatePassword - 4"
+		log.Errorw(code, err)
+		return err
+	}
+
 	err = u.userRepo.UpdatePassword(ctx, password, id)
 	if err != nil {
-		code := "[SERVICE] UpdatePassword - 2"
+		code := "[SERVICE] UpdatePassword - 5"
 		log.Errorw(code, err)
 		return err
 	}

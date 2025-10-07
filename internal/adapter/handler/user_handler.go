@@ -87,7 +87,13 @@ func (u *userHandler) UpdatePassword(c *fiber.Ctx)  error {
 		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
 	}
 
-	err = u.userService.UpdatePassword(c.Context(), req.NewPassword, int64(claims.UserID))
+	reqUpdatePassword := entity.UpdatePasswordEntity {
+		CurrentPassword:req.CurrentPassword,
+		NewPassword:req.NewPassword,
+		ConfirmPassword:req.ConfirmPassword,
+	}
+
+	err = u.userService.UpdatePassword(c.Context(), reqUpdatePassword, int64(claims.UserID))
 	if err != nil {
 		code := "[HANDLER] UpdatePassword - 4"
 		log.Errorw(code, err)

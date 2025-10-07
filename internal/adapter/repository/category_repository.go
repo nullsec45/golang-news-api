@@ -50,7 +50,6 @@ func (c *categoryRepository) GetCategories(ctx context.Context)([]entity.Categor
 				ID:val.User.ID,
 				Name:val.User.Name,
 				Email:val.User.Email,
-				Password:val.User.Password,
 			},
 		})
 	}
