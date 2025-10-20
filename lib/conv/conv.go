@@ -30,3 +30,11 @@ func StringToInt64(s string) (int64, error) {
 
 	return newData, nil
 }
+
+func StringToInt(s string) (int, error) {
+	numb, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, err
+	}
+	return numb,nil
+}
