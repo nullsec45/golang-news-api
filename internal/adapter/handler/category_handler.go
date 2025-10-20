@@ -21,6 +21,8 @@ type CategoryHandler interface {
 	CreateCategory(c *fiber.Ctx)  error
 	EditCategoryByID(c *fiber.Ctx) error
 	DeleteCategory(c *fiber.Ctx) error
+
+	GetCategoryFE(c *fiber.Ctx) error
 }
 
 
@@ -113,6 +115,37 @@ func (ch *categoryHandler) GetCategoryByID(c *fiber.Ctx) error {
 	defaultSuccessResponse.Data=categoryResponse
 	defaultSuccessResponse.Pagination=nil
 	defaultSuccessResponse.Meta.Message="Category fetched Successfully"
+
+	return c.JSON(defaultSuccessResponse)
+}
+
+func (ch *categoryHandler) GetCategoryFE(c *fiber.Ctx) error{
+	results, err := ch.categoryService.GetCategories(c.Context())
+	
+	if err != nil {
+		code = "[HANDLER] GetCategoryFE - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	categoryResponses := []response.SuccessCategoryResponse{}
+	for _, result := range results {
+		categoryResponse := response.SuccessCategoryResponse {
+			ID:result.ID,
+			Title:result.Title,
+			Slug:result.Slug,
+			CreatedByName:result.User.Name,
+		}
+		categoryResponses=append(categoryResponses, categoryResponse)
+	}
+
+	defaultSuccessResponse.Meta.Status=true
+	defaultSuccessResponse.Pagination=nil
+	defaultSuccessResponse.Meta.Message="Categories fetched Successfully"
+	defaultSuccessResponse.Data=categoryResponses
 
 	return c.JSON(defaultSuccessResponse)
 }
