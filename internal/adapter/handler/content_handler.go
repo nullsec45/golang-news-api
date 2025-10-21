@@ -101,7 +101,7 @@ func (coh *contentHandler) GetContentWithQuery(c *fiber.Ctx ) error {
 		CategoryID: int64(categoryID),
 	}
 
-	results, _, _, err := coh.contentService.GetContents(c.Context(), reqEntity)
+	results, totalData, totalPages, err := coh.contentService.GetContents(c.Context(), reqEntity)
 	if err != nil {
 		code = "[HANDLER] GetContentWithQuery - 4"
 		log.Errorw(code, err)
@@ -126,7 +126,7 @@ func (coh *contentHandler) GetContentWithQuery(c *fiber.Ctx ) error {
 			Status: content.Status,
 			CategoryID: content.CategoryID,
 			CreatedByID: content.CreatedByID,
-			CreatedAt: content.CreatedAt.Format(time.RFC3339),
+			CreatedAt: content.CreatedAt.Local().Format("02 January 2006"),
 			CategoryName:content.Category.Title,
 			Author: content.User.Name,
 		}
@@ -134,8 +134,14 @@ func (coh *contentHandler) GetContentWithQuery(c *fiber.Ctx ) error {
 		respContents = append(respContents, respContent)
 	}
 
-	defaultSuccessResponse.Data=results
-	defaultSuccessResponse.Pagination=nil
+
+	defaultSuccessResponse.Data=respContents
+	defaultSuccessResponse.Pagination=&response.PaginationResponse{
+		TotalRecords:int(totalData),
+		Page:page,
+		PerPage:limit,
+		TotalPages:int(totalPages),
+	}
 	return c.JSON(defaultSuccessResponse)
 }
 
@@ -236,7 +242,7 @@ func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
 		respContents = append(respContents, respContent)
 	}
 
-	defaultSuccessResponse.Data=results
+	defaultSuccessResponse.Data=respContents
 	defaultSuccessResponse.Pagination=nil
 	return c.JSON(defaultSuccessResponse)
 }
