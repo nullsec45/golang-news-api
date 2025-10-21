@@ -16,8 +16,8 @@ type DefaultSuccessResponse struct {
 }
 
 type PaginationResponse struct {
-	TotalRecords  int  `json:"total_records"`
-	Page          int  `json:"page"`
-	PerPage       int  `json:"per_page"`
-	TotalPage     int  `json:"total_pages"`
+	TotalRecords  int   `json:"total_records"`
+	Page          int   `json:"page"`
+	PerPage       int   `json:"per_page"`
+	TotalPages    int   `json:"total_pages"`
 }

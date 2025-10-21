@@ -10,7 +10,7 @@ type ContentResponse struct {
 	Status       string    `json:"status"`
   	CategoryID   int64     `json:"category_id"`
 	CreatedByID  int64     `json:"created_by_id"`
-	CreatedAt    string     `json:"created_at"`
+	CreatedAt    string    `json:"created_at"`
 	CategoryName string    `json:"category_name"`
 	Author       string    `json:"author"`
 }
