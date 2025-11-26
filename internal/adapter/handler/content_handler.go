@@ -50,7 +50,7 @@ func (coh *contentHandler) GetContentWithQuery(c *fiber.Ctx ) error {
 		}
 	}
 
-	limit := 6
+	limit := 10
 	if c.Query("limit") != "" {
 		limit, err = conv.StringToInt(c.Query("limit"))
 		if err != nil {
@@ -146,8 +146,6 @@ func (coh *contentHandler) GetContentWithQuery(c *fiber.Ctx ) error {
 }
 
 func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
-	page := 1
-
 	claims := c.Locals("user").(*entity.JwtData)
 	userID := claims.UserID
 	if userID == 0 {
@@ -159,18 +157,46 @@ func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusUnauthorized).JSON(errorResp)
 	}
 
-	limit := 6
+	page := 1
+	if c.Query("page") != "" {
+		page, err = conv.StringToInt(c.Query("page"))
+		if err != nil {
+			code := "[HANDLER] GetContents - 2"
+			log.Errorw(code, err)
+			errorResp.Meta.Status = false
+			errorResp.Meta.Message = "Invalid page number"
+
+			return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+		}
+	}
+
+	// limit := 10
+	// if c.Query("limit") != "" {
+
+	// 	limit, err = conv.StringToInt(c.Query("limit"))
+	// 	if err != nil {
+	// 		code := "[HANDLER] GetContents - 2"
+	// 		log.Errorw(code, err)
+	// 		errorResp.Meta.Status=false
+	// 		errorResp.Meta.Message="Invalid limit number"
+	// 	}
+
+	// 	return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	// }
+
+	limit := 10
 	if c.Query("limit") != "" {
 		limit, err = conv.StringToInt(c.Query("limit"))
 		if err != nil {
-			code := "[HANDLER] GetContentWithQuery - 2"
+			code := "[HANDLER] GetContents - 3"
 			log.Errorw(code, err)
-			errorResp.Meta.Status=false
-			errorResp.Meta.Message="Invalid limit number"
-		}
+			errorResp.Meta.Status = false
+			errorResp.Meta.Message = "Invalid limit number"
 
-		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+			return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+		}
 	}
+	
 
 	orderBy := "created_at"
 	if c.Query("orderBy") != "" {
@@ -209,7 +235,7 @@ func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
 		CategoryID:int64(categoryID),
 	}
 
-	results, _ , _ , err := coh.contentService.GetContents(c.Context(), reqEntity)
+	results, totalData , totalPages , err := coh.contentService.GetContents(c.Context(), reqEntity)
 	if err != nil {
 		code = "[HANDLER] GetContents  - 2"
 		log.Errorw(code, err)
@@ -243,12 +269,18 @@ func (coh *contentHandler) GetContents(c *fiber.Ctx) error {
 	}
 
 	defaultSuccessResponse.Data=respContents
-	defaultSuccessResponse.Pagination=nil
+	defaultSuccessResponse.Pagination = &response.PaginationResponse{
+		TotalRecords: int(totalData),
+		Page:         page,
+		PerPage:      limit,
+		TotalPages:   int(totalPages),
+	}
 	return c.JSON(defaultSuccessResponse)
 }
 
 func (coh *contentHandler) GetContentDetail(c *fiber.Ctx) error {
 	idParam := c.Params("id")
+	fmt.Println()
 	contentID, err := conv.StringToInt64(idParam)
 	if err != nil {
 		code = "[HANDLER] GetContentByID - 1"
