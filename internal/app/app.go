@@ -118,7 +118,7 @@ func RunServer(){
 	feApp := api.Group("/fe")
 	feApp.Get("/categories", categoryHandler.GetCategoryFE)
 	feApp.Get("/contents", contentHandler.GetContentWithQuery)
-	feApp.Get("/contents/:contentID", contentHandler.GetContentDetail)
+	feApp.Get("/contents/:id", contentHandler.GetContentDetail)
 
 	go func(){
 		if cfg.App.AppPort == "" {
