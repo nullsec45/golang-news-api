@@ -18,3 +18,11 @@ type UpdatePasswordEntity struct {
 	NewPassword     string
 	ConfirmPassword string
 }
+
+type RegisterUserEntity struct {
+	Name     string 
+	Email    string
+	Role     string
+	Password string
+	ConfirmPassword string
+}

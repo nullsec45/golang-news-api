@@ -14,13 +14,13 @@ import (
 type UserService interface {
 	UpdatePassword(ctx context.Context, req entity.UpdatePasswordEntity, id int64) error
 	GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error)
+	RegisterUser(ctx context.Context, req entity.RegisterUserEntity) error
 }
 
 type userService struct {
 	userRepo repository.UserRepository
 }
 
-// GetUserByID implements UserService.
 func (u *userService) GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error) {
 	result, err := u.userRepo.GetUserByID(ctx, id)
 	if err != nil {
@@ -31,7 +31,6 @@ func (u *userService) GetUserByID(ctx context.Context, id int64) (*entity.UserEn
 	return result, nil
 }
 
-// UpdatePassword implements UserService.
 func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePasswordEntity, id int64) error {
 	result, err := u.userRepo.GetUserByIDWithPassword(ctx, id)
 	if err != nil {
@@ -47,13 +46,6 @@ func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePassw
 		return err
 	}
 
-	// if req.NewPassword != req.ConfirmPassword {
-	// 	code = "[SERVICE] UpdatePassword - 3"
-	// 	err = errors.New("Failed update password, new password and confirm password don't match!.")
-	// 	log.Errorw(code, "Invalid Password")
-	// 	return  err
-	// }
-
 	password, err := conv.HashPassword(req.ConfirmPassword)
 	if err != nil {
 		code := "[SERVICE] UpdatePassword - 4"
@@ -64,6 +56,27 @@ func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePassw
 	err = u.userRepo.UpdatePassword(ctx, password, id)
 	if err != nil {
 		code := "[SERVICE] UpdatePassword - 5"
+		log.Errorw(code, err)
+		return err
+	}
+
+	return nil
+}
+
+func (u *userService) RegisterUser(ctx context.Context, req entity.RegisterUserEntity) error {
+	
+	password, err := conv.HashPassword(req.ConfirmPassword)
+	if err != nil {
+		code := "[SERVICE] RegisterUser - 2"
+		log.Errorw(code, err)
+		return err
+	}
+
+	req.Password=password
+
+	err = u.userRepo.RegisterUser(ctx, req)
+	if err != nil {
+		code := "[SERVICE] RegisterUser - 3"
 		log.Errorw(code, err)
 		return err
 	}

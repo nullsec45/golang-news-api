@@ -13,6 +13,7 @@ import (
 type UserHandler interface {
 	GetUserByID(c *fiber.Ctx) error
 	UpdatePassword(c *fiber.Ctx) error
+	RegisterUser(c *fiber.Ctx) error
 }
 
 type userHandler struct {
@@ -108,4 +109,56 @@ func (u *userHandler) UpdatePassword(c *fiber.Ctx)  error {
 	defaultSuccessResponse.Data=nil
 
 	return c.Status(fiber.StatusCreated).JSON(defaultSuccessResponse)
+}
+
+func (u *userHandler) RegisterUser(c *fiber.Ctx) error {
+	req := request.RegisterRequest{}
+	resp := response.Meta{}
+
+	if err = c.BodyParser(&req); err != nil {
+		code = "[HANDLER] RegisterUser - 1"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	if err = validatorLib.ValidateStruct(req); err != nil {
+		code = "[HANDLER] RegisterUser - 2"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+	}
+
+	reqRegister := entity.RegisterUserEntity {
+		Name:req.Name,
+		Email:req.Email,
+		Role:req.Role,
+		Password:req.Password,
+	}
+
+	err := u.userService.RegisterUser(c.Context(), reqRegister)
+	
+	if err != nil {
+		code = "[HANDLER] RegisterUser - 3"
+		log.Errorw(code, err)
+		errorResp.Meta.Status=false
+		errorResp.Meta.Message=err.Error()
+
+		if err.Error() == "Email already exists" {
+			return c.Status(fiber.StatusBadRequest).JSON(errorResp)
+		}
+
+		return c.Status(fiber.StatusInternalServerError).JSON(errorResp)
+	}
+
+	resp.Status=true
+	resp.Message="Register successfull"
+
+	return c.JSON(resp)
+
 }

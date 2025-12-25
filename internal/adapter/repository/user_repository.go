@@ -7,19 +7,21 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 	"gorm.io/gorm"
+	"errors"
 )
 
 type UserRepository interface {
 	UpdatePassword(ctx context.Context, newPass string, id int64) error
 	GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error)
 	GetUserByIDWithPassword(ctx context.Context, id int64) (*entity.UserEntityWithPassword, error)
+
+	RegisterUser(ctx context.Context, req entity.RegisterUserEntity) error
 }
 
 type userRepository struct {
 	db *gorm.DB
 }
 
-// GetUserByID implements UserRepository.
 func (u *userRepository) GetUserByID(ctx context.Context, id int64) (*entity.UserEntity, error) {
 	var modelUser model.User
 	err = u.db.Where("id = ?", id).First(&modelUser).Error
@@ -38,7 +40,7 @@ func (u *userRepository) GetUserByID(ctx context.Context, id int64) (*entity.Use
 
 func (u *userRepository) GetUserByIDWithPassword(ctx context.Context, id int64) (*entity.UserEntityWithPassword, error) {
 	var modelUser model.User
-	err = u.db.Where("id = ?", id).First(&modelUser).Error
+	err := u.db.Where("id = ?", id).First(&modelUser).Error
 	if err != nil {
 		code := "[REPOSITORY] GetUserByID - 1"
 		log.Errorw(code, err)
@@ -53,7 +55,6 @@ func (u *userRepository) GetUserByIDWithPassword(ctx context.Context, id int64) 
 	}, nil
 }
 
-// UpdatePassword implements UserRepository.
 func (u *userRepository) UpdatePassword(ctx context.Context, newPass string, id int64) error {
 	err = u.db.Model(&model.User{}).Where("id = ?", id).Update("password", newPass).Error
 	if err != nil {
@@ -61,6 +62,46 @@ func (u *userRepository) UpdatePassword(ctx context.Context, newPass string, id 
 		log.Errorw(code, err)
 		return err
 	}
+
+	return nil
+}
+
+func (u *userRepository) RegisterUser(ctx context.Context, req entity.RegisterUserEntity) error {
+	var existingUser model.User
+
+	err := u.db.WithContext(ctx).
+        Select("id").
+        Where("email = ?", req.Email).
+        First(&existingUser).Error
+
+	if err == nil {
+		err=errors.New("Email already exists")
+	}	
+
+	if err != gorm.ErrRecordNotFound {
+        log.Errorw("[REPOSITORY] RegisterUser - 2 (Check Email)", err)
+        return err
+    }
+
+		
+	modelUser := model.User{
+		Name:req.Name,
+		Email:req.Email,
+		Role:req.Role,
+		Password:req.Password,
+	}
+
+	err = u.db.Create(&modelUser).Error
+	if err != nil {
+		code := "[REPOSITORY] RegisterUser - 3"
+		log.Errorw(code, err)
+		return err
+	}
+
+	if err != gorm.ErrRecordNotFound {
+        log.Errorw("[REPOSITORY] RegisterUser - 4 (Register User)", err)
+        return err
+    }
 
 	return nil
 }

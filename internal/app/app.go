@@ -87,7 +87,11 @@ func RunServer(){
 	}
 
 	api := app.Group("/api")
-	api.Post("/login", authHandler.Login)
+
+	auth := api.Group("auth")
+	auth.Post("/login", authHandler.Login)
+	auth.Post("/register", userHandler.RegisterUser)
+
 
 	adminApp := api.Group("/admin")
 	adminApp.Use(middlewareAuth.CheckToken())
