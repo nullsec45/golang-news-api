@@ -4,12 +4,22 @@ import (
 	"errors"
 
 	"github.com/go-playground/validator/v10"
+	"strings"
+	"reflect"
 )
 
 var validate *validator.Validate
 
 func init() {
 	validate = validator.New()
+
+	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
+        name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
+        if name == "-" {
+            return ""
+        }
+        return name
+    })
 }
 
 func ValidateStruct(s interface{}) error {
@@ -27,7 +37,9 @@ func ValidateStruct(s interface{}) error {
 					errorMessages = append(errorMessages, "Password minimal 8 karakter.")
 				}
 			case "eqfield":
-				errorMessages = append(errorMessages, err.Field()+" harus sama dengan "+err.Param()+".")
+				errorMessages = append(errorMessages, err.Field()+" harus sama dengan "+strings.ToLower(err.Param())+".")
+			case "oneof": 
+				errorMessages = append(errorMessages, err.Field()+"  yang tersedia adalah "+strings.ToLower(err.Param())+".")
 			default:
 				errorMessages = append(errorMessages, "Field "+err.Field()+" tidak valid.")
 			}
