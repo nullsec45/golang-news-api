@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2/log"
 	"errors"
-	// "fmt"
 )
 
 type UserService interface {
@@ -46,16 +45,16 @@ func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePassw
 		return err
 	}
 
-	password, err := conv.HashPassword(req.ConfirmPassword)
+	bytes, err := conv.HashPassword(req.ConfirmPassword)
 	if err != nil {
-		code := "[SERVICE] UpdatePassword - 4"
+		code := "[SERVICE] UpdatePassword - 3"
 		log.Errorw(code, err)
 		return err
 	}
 
-	err = u.userRepo.UpdatePassword(ctx, password, id)
+	err = u.userRepo.UpdatePassword(ctx, string(bytes), id)
 	if err != nil {
-		code := "[SERVICE] UpdatePassword - 5"
+		code := "[SERVICE] UpdatePassword - 4"
 		log.Errorw(code, err)
 		return err
 	}
@@ -65,18 +64,18 @@ func (u *userService) UpdatePassword(ctx context.Context, req entity.UpdatePassw
 
 func (u *userService) RegisterUser(ctx context.Context, req entity.RegisterUserEntity) error {
 	
-	password, err := conv.HashPassword(req.ConfirmPassword)
+	bytes, err := conv.HashPassword(req.Password)
 	if err != nil {
-		code := "[SERVICE] RegisterUser - 2"
+		code := "[SERVICE] RegisterUser - 1"
 		log.Errorw(code, err)
 		return err
 	}
 
-	req.Password=password
+	req.Password=string(bytes)
 
 	err = u.userRepo.RegisterUser(ctx, req)
 	if err != nil {
-		code := "[SERVICE] RegisterUser - 3"
+		code := "[SERVICE] RegisterUser - 2"
 		log.Errorw(code, err)
 		return err
 	}
