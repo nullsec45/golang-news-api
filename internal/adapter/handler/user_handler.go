@@ -127,7 +127,7 @@ func (u *userHandler) RegisterUser(c *fiber.Ctx) error {
 
 	if req.Role == "" {
         req.Role = "viewer"
-    }
+    }	
 
 	if err = validatorLib.ValidateStruct(req); err != nil {
 		code = "[HANDLER] RegisterUser - 2"
